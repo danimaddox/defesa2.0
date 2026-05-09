@@ -1,0 +1,12 @@
+[33m48c9fc6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: commit: PI3 7 atualização - MELHORIAS GERAIS
+[33m4248ca8[m HEAD@{1}: commit: PI3 7 atualização - MELHORIAS GERAIS
+[33m102b1e6[m HEAD@{2}: commit: PI3 5ª atualizaçao. ACRESCENTANDO FILTRO POR ANO PARA OS GRAFICOS MELHORIAS GERAIS
+[33m99964b2[m HEAD@{3}: commit: PI3 43ª atualizaçao. MELHORIA DE GRÁFICOS E CARDS BI
+[33m726951a[m HEAD@{4}: commit: PI3 3ª atualizaçao.PANDAS
+[33ma41a252[m HEAD@{5}: commit: PI3 2ª atualizaçao. graficos. correçao de bugs mapas. analise com pandas e mapa de calor .
+[33m5ecfdb8[m HEAD@{6}: commit: PI3 2ª atualizaçao ultima versao melhoria de layout. graficos. e correçao de bugs mapas, busca de endereço etc.
+[33m3810050[m HEAD@{7}: commit: PI3 1ª atualizaçao ultima versao melhoria de layout. graficos. e correçao de bugs mapas, busca de endereço etc.
+[33m51eac4a[m HEAD@{8}: commit: Adiciona dependência requests
+[33m33a6c16[m HEAD@{9}: commit: atualizaçao ultima versao melhoria de layout. graficos. e correçao de bugs mapas, busca de endereço etc.
+[33mfea3a81[m HEAD@{10}: commit: Atualização do sistema com filtros, tabela e layout completos
+[33m6f33c6a[m HEAD@{11}: commit: atualiza bd
