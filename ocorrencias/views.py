@@ -260,7 +260,7 @@ def graficos_data(request):
         qs = qs.filter(motivo__icontains=motivo)
 
     # ---------------- DATAFRAME ----------------
-    qs = qs.values("data", "motivo", "distrito", "bairro")
+    qs = qs.values("data", "motivo", "distrito", "bairro","area_risco")
     df = pd.DataFrame(list(qs))
     if df.empty or 'motivo' not in df:
         return JsonResponse({
@@ -377,7 +377,8 @@ def graficos_data(request):
             "series": series
         },
         "heatmap": heatmap_data,
-        "analise_extra": analise_extra
+        "analise_extra": analise_extra,
+        "ocorrencias": df.to_dict(orient='records'),
     })
     
 @login_required

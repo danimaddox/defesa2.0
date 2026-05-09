@@ -105,7 +105,7 @@ input:focus, select:focus{ border-color:#fb8c00;  outline:none;  background:#fff
 <label for="distrito">Distrito</label>
 <select name="distrito">
 <option>Selecione</option>
-<option>Jd. Ângela</option>
+<option>Jd. Angela</option>
 <option>Jd. São Luis</option>
 </select>
 </div>
@@ -226,44 +226,87 @@ map.on('click', function (e) {
 // -------- BUSCA DE ENDEREÇO --------
 
 async function buscarEndereco() {
+
   var enderecoInput = document.getElementById("id_endereco");
+
   if (!enderecoInput) return;
 
-  var endereco = enderecoInput.value;
+  var endereco = enderecoInput.value.trim();
+
   if (!endereco) return;
 
+  // força cidade
+  var enderecoCompleto = `${endereco}, São Paulo, SP, Brasil`;
+
   try {
-    var url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=' 
-              + encodeURIComponent(endereco + ', São Paulo, Brasil');
 
-    var response = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-    var data = await response.json();
+    const url =
+      'https://nominatim.openstreetmap.org/search?' +
+      'format=jsonv2' +
+      '&addressdetails=1' +
+      '&extratags=1' +
+      '&namedetails=1' +
+      '&countrycodes=br' +
+      '&limit=10' +
+      '&bounded=1' +
+      '&viewbox=-46.826,-23.356,-46.365,-23.816' +
+      '&q=' + encodeURIComponent(enderecoCompleto);
 
-    if (data && data.length > 0) {
+    const response = await fetch(url, {
+      headers: {
+        'Accept-Language': 'pt-BR'
+      }
+    });
 
-      var lat = parseFloat(data[0].lat);
-      var lon = parseFloat(data[0].lon);
+    const data = await response.json();
 
-      marker.setLatLng([lat, lon]);
-      map.setView([lat, lon], 16);
+    if (!data || data.length === 0) {
 
-      document.getElementById("latitude").value = lat.toFixed(7);
-      document.getElementById("longitude").value = lon.toFixed(7);
+      alert("ENDEREÇO NÃO ENCONTRADO NA CIDADE. TENTE SER MAIS ESPECÍFICO (EX: NOME DARUA, N.º, BAIRRO).");
 
-    } else {
-      alert("ENDEREÇO NÃO ENCONTRADO");
+      return;
     }
 
+    // 🔥 tenta achar resultado com house_number
+    let melhorResultado = data.find(r =>
+      r.address &&
+      (
+        r.address.house_number ||
+        r.type === "house" ||
+        r.type === "building"
+      )
+    );
+
+    // fallback
+    if (!melhorResultado) {
+      melhorResultado = data[0];
+    }
+
+    const lat = parseFloat(melhorResultado.lat);
+    const lon = parseFloat(melhorResultado.lon);
+
+    marker.setLatLng([lat, lon]);
+
+    map.setView([lat, lon], 19);
+
+    document.getElementById("latitude").value = lat.toFixed(7);
+    document.getElementById("longitude").value = lon.toFixed(7);
+
+    console.log("Resultado escolhido:", melhorResultado);
+
   } catch (error) {
-    console.error("Erro:", error);
-    alert("Erro ao buscar endereço");
+
+    console.error(error);
+
+    alert("Erro ao localizar endereço.");
+
   }
 }
 
 // evento ao sair do campo
 var enderecoField = document.getElementById("id_endereco");
 if (enderecoField) {
-  enderecoField.addEventListener("blur", buscarEndereco);
+  enderecoField.addEventListener("change", buscarEndereco);
 }
 </script>
 

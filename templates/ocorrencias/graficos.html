@@ -9,7 +9,7 @@
   <style>
     body{font-family:'Rubik',sans-serif;background:#f4f6f9;margin:0}
     header{background:#ff9800;color:#fff;text-align:center;padding:10px 0}
-    .container{max-width:1200px;margin:10px auto;padding:0 10px}
+    .container{max-width:1200px;margin:20px auto;padding:0 20px}
     .row{  display:flex;  flex-wrap:wrap;  gap:10px;  margin-bottom:10px;}
    .card{  background:#fff;  border-radius:8px;  box-shadow:0 2px 8px rgba(0,0,0,.08);  padding:10px;  flex:1 1 520px;  min-width:330px;  margin-bottom:10px;}
     h2,h3{margin:8px 0}
@@ -111,22 +111,22 @@
   <div class="row">
 
   <div class="card">
-    <h3>📊 Motivo mais frequente</h3>
-    <p id="insightPrincipal"></p>
+    <h3> TOP 3 MOTIVOS </h3>
+    <div id="topMotivos"></div>
   </div>
 
   <div class="card">
-    <h3>📍 Distrito mais Crítico</h3>
+    <h3> DISTRITO MAIS CRÍTICO </h3>
     <p id="insightDistrito"></p>
   </div>
 
   <div class="card">
-    <h3>📈 Tendência para o Período</h3>
-    <p id="insightTendencia"></p>
+    <h3> TOP 3 BAIRROS CRÍTICOS </h3>
+    <p id="topBairros"></p>
   </div>
 
   <div class="card">
-    <h3>⚠️ Risco</h3>
+    <h3> OCORRÊNCIAS POR ÁREAS DE RISCO</h3>
     <p id="insightRisco"></p>
   </div>
 
@@ -449,7 +449,18 @@ function formatarMes(m){
     return p.length?`Filtros aplicados — ${p.join(' · ')}`:'Panorama geral (sem filtros aplicados).';
   }
 
-  
+  function normalizarTexto(texto){
+
+  if(!texto) return '';
+
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .toLowerCase()
+    .replace(/\s+/g, ' ') // espaços duplos
+    .trim();
+  }
+
 function gerarAnalise(payload, params={}){
 
   const m = payload.motivos || {labels:[],data:[]};
@@ -480,6 +491,197 @@ function gerarAnalise(payload, params={}){
 
   const partMotivo = Math.round((motivoQtd/total)*100);
   const partDistrito = Math.round((distritoQtd/total)*100);
+
+  // 🔥 TOP 3 BAIRROS NORMALIZADOS
+
+const bairrosNormalizados = {};
+
+if(payload.ocorrencias && Array.isArray(payload.ocorrencias)){
+
+  payload.ocorrencias.forEach(o => {
+
+    const original = o.bairro || "Não informado";
+
+    const chave = normalizarTexto(original);
+
+    if(!bairrosNormalizados[chave]){
+      bairrosNormalizados[chave] = {
+        nome: formatarTexto(original),
+        total: 0
+      };
+    }
+
+    bairrosNormalizados[chave].total += 1;
+  });
+}
+
+const topBairros = Object.values(bairrosNormalizados)
+  .sort((a,b)=> b.total - a.total)
+  .slice(0,3);
+
+let bairrosHTML = "";
+
+topBairros.forEach((bairro, i)=>{
+
+  const percentual = Math.round((bairro.total / total) * 100);
+
+  let medalha = "3º ";
+
+  if(i === 0) medalha = "1º ";
+  if(i === 1) medalha = "2º ";
+
+  bairrosHTML += `
+    <div style="
+      margin-bottom:12px;
+      padding:10px;
+      border-radius:10px;
+      background:#f5f5f5;
+    ">
+
+      <div style="
+        font-weight:600;
+        font-size:15px;
+      ">
+        ${medalha} ${bairro.nome}
+      </div>
+
+      <div style="
+        height:8px;
+        background:#ddd;
+        border-radius:10px;
+        overflow:hidden;
+        margin-top:6px;
+      ">
+        <div style="
+          width:${percentual}%;
+          height:100%;
+          background:#d32f2f;
+        "></div>
+      </div>
+
+      <small>
+        ${bairro.total} ocorrências (${percentual}%)
+      </small>
+
+    </div>
+  `;
+});
+// 🔥 ANÁLISE DE ÁREA DE RISCO
+
+let r0r1 = 0;
+let r2 = 0;
+let r3 = 0;
+let r4 = 0;
+
+if(payload.ocorrencias && Array.isArray(payload.ocorrencias)){
+
+  payload.ocorrencias.forEach(o => {
+
+    const risco = parseInt(o.area_risco);
+
+    if(risco === 0 || risco === 1){
+      r0r1++;
+    }
+    else if(risco === 2){
+      r2++;
+    }
+    else if(risco === 3){
+      r3++;
+    }
+    else if(risco === 4){
+      r4++;
+    }
+  });
+}
+
+const totalRisco = r0r1 + r2 + r3 + r4;
+
+const pR0R1 = totalRisco ? Math.round((r0r1 / totalRisco) * 100) : 0;
+const pR2   = totalRisco ? Math.round((r2 / totalRisco) * 100) : 0;
+const pR3   = totalRisco ? Math.round((r3 / totalRisco) * 100) : 0;
+const pR4   = totalRisco ? Math.round((r4 / totalRisco) * 100) : 0;
+
+document.getElementById("insightRisco").innerHTML = `
+
+<div style="margin-bottom:12px">
+
+  <div style="line-height:1.8; font-size:15px;">
+
+  <div>
+    🟢 <strong> Ocorrências fora de Área de Risco ou Área de Risco R1: ${r0r1} (${pR0R1}%)</strong>
+  </div>
+
+  <br>
+
+  <div>
+    🟡 <strong> Ocorrências em Área de Risco R2: ${r2} (${pR2}%)</strong>
+  </div>
+
+  <br>
+
+  <div>
+    🟠 <strong> Ocorrências em Área de Risco R3: ${r3} (${pR3}%)</strong>
+  </div>
+
+  <br>
+
+  <div>
+    🔴 <strong> Ocorrências em Área de Risco R4: ${r4} (${pR4}%)</strong>
+  </div>
+
+</div>
+`;
+// 🔥 TOP 3 MOTIVOS
+
+let top3HTML = "";
+
+const motivosOrdenados = m.labels.map((label, index) => ({
+    nome: formatarTexto(label),
+    valor: m.data[index]
+}))
+.sort((a,b) => b.valor - a.valor)
+.slice(0,3);
+
+motivosOrdenados.forEach((item, i) => {
+
+    const percentual = Math.round((item.valor / total) * 100);
+
+    let medalha = "3º";
+
+    if(i === 0) medalha = "1º";
+    if(i === 1) medalha = "2º";
+
+    top3HTML += `
+        <div style="
+            margin-bottom:12px;
+            padding:10px;
+            border-radius:10px;
+            background:#f5f5f5;
+        ">
+            <div style="font-weight:600; font-size:15px;">
+                ${medalha} ${item.nome}
+            </div>
+
+            <div style="
+                height:8px;
+                background:#ddd;
+                border-radius:10px;
+                overflow:hidden;
+                margin-top:6px;
+            ">
+                <div style="
+                    width:${percentual}%;
+                    height:100%;
+                    background:#ff9800;
+                "></div>
+            </div>
+
+            <small>
+                ${item.valor} ocorrências (${percentual}%)
+            </small>
+        </div>
+    `;
+});  
 
  // NOVA TENDÊNCIA (POR PERÍODO COMPLETO)
 
@@ -517,72 +719,21 @@ if(ev.labels.length >= 3){
 if(variacao > 15) tendencia = "crescimento";
 else if(variacao < -15) tendencia = "queda";
 
-  // 🔥 NOVO CÁLCULO DE RISCO (INTELIGENTE)
 
-// 1. VOLUME
-let score = 0;
-
-if(total > 30) score += 2;
-else if(total > 10) score += 1;
-
-// 2. TENDÊNCIA
-if(tendencia === "crescimento") score += 2;
-else if(tendencia === "estável") score += 1;
-
-// 3. ÁREA DE RISCO (se existir no backend)
-let riscoArea = payload.area_risco || [];
-
-if(riscoArea.includes("R3") || riscoArea.includes("R4")){
-  score += 2;
-}else if(riscoArea.includes("R2")){
-  score += 1;
-}
-
-// 🔥 CLASSIFICAÇÃO FINAL
-let risco = "BAIXO";
-let corRisco = "#2e7d32";
-
-if(score >= 4){
-  risco = "ALTO";
-  corRisco = "#c62828";
-}else if(score >= 2){
-  risco = "MODERADO";
-  corRisco = "#f9a825";
-}
 
   // 🔥 ATUALIZA OS CARDS
-  document.getElementById("insightPrincipal").innerHTML =
-    `${motivoMais} corresponde ao motivo com maior número de ocorrências, com ${motivoQtd} registros (${partMotivo}%).`;
+document.getElementById("topMotivos").innerHTML = top3HTML;
 
   document.getElementById("insightDistrito").innerHTML =
-    `${distritoMais} é o distrito com maior número de ocorrências, com ${distritoQtd} registros (${partDistrito}%).`;
+   `<br><h3>${distritoMais}</h3> <br> Esse é o distrito com maior número de ocorrências, com ${distritoQtd} registros (${partDistrito}%).</strong>`;
 
   let corTendencia = "#555";
 
 if(tendencia === "crescimento") corTendencia = "#c62828";
 if(tendencia === "queda") corTendencia = "#2e7d32";
 
-document.getElementById("insightTendencia").innerHTML =
-  `<span style="color:${corTendencia}; font-weight:bold">
-    ${tendencia.toUpperCase()}
-  </span>
-  <br><small>Variação: ${variacao.toFixed(1)}%</small>`;
+document.getElementById("topBairros").innerHTML = bairrosHTML;
 
-  let fraseRisco = "";
-
-if(risco === "ALTO"){
-  fraseRisco = "Média de ocorrências elevada com tendência de crescimento — atenção imediata recomendada.";
-}
-else if(risco === "MODERADO"){
-  fraseRisco = "Ocorrências em nível intermediário — Manter monitoramento.";
-}
-else{
-  fraseRisco = "Baixo volume de ocorrências — situação sob controle.";
-}
-
-document.getElementById("insightRisco").innerHTML =
-  `<span style="color:${corRisco}; font-weight:bold; font-size:18px">${risco}</span>
-   <br><small>${fraseRisco}</small>`;
 }
 
   async function load(params={}){
